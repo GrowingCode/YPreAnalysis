@@ -1,0 +1,4 @@
+C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-9.93.19503/bin64/drrun.exe -c C:/HomeSpace/CTaintAnalysis/yyx_pre_analysis/build/Release/yyx_pre_analysis.dll -- C:/Users/yangy/source/repos/TestReadFile/x64/Release/TestReadFile.exe C:/HomeSpace/BinaryFuzzInput/5bytes.bin
+
+
+

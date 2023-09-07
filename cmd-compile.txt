@@ -1,0 +1,7 @@
+mkdir build && cd build
+cmake .. #comment: if DynamoRIO_DIR is set in cmakelists.txt
+cmake .. -DDynamoRIO_DIR=C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-9.93.19503/cmake
+cmake .. -G "MinGW Makefiles" -DDynamoRIO_DIR=C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-9.93.19503/cmake
+linux: mingw32-make -j4
+win10: cmake --build . --config Release
+win10: cmake --build . 

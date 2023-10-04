@@ -116,10 +116,21 @@ app_instruction_val(void* drcontext, void* tag, instrlist_t* bb, instr_t* instr,
 					void* buf_ptr = drx_buf_get_buffer_base(drcontext, temp_reg_value_store_buffer);
 					opnd_t opnd_0 = instr_get_src(instr, 0);
 					opnd_size_t o0_sz = opnd_get_size(opnd_0);
-					instr_t* new_instr = INSTR_CREATE_vmovdqu(drcontext, opnd_create_abs_addr(buf_ptr, o0_sz), opnd_0);
+					// opnd_t dst_opnd = opnd_create_abs_addr(buf_ptr, o0_sz);
+					opnd_t dst_opnd = opnd_create_reg(DR_REG_XMM15);
+					instr_t* new_instr = INSTR_CREATE_vmovdqu(drcontext, dst_opnd, opnd_0);
 					// INSTR_CREATE_vmovdqu(drcontext, , s);
 					// instr_t* new_instr = XINST_CREATE_store(drcontext, OPND_CREATE_MEMPTR(buf_ptr, 0), opnd);
-					instrlist_meta_preinsert(bb, instr, new_instr);
+//					instrlist_meta_preinsert(bb, instr, new_instr);
+
+					byte new_instr_store[20]{0};
+					byte* new_instr_store_end = instr_encode(drcontext, new_instr, new_instr_store);
+					int bidx = 0;
+					for (byte* nis_ptr = new_instr_store; nis_ptr < new_instr_store_end; nis_ptr++) {
+						dr_printf("inst_byte_%d:%x,", bidx, *nis_ptr);
+						bidx++;
+					}
+					dr_printf("\n");
 
 					app_pc instr_app_pc = instr_get_app_pc(instr);
 					dr_insert_clean_call(drcontext, bb, instr, test_paddd, true, 1, OPND_CREATE_INTPTR(instr_app_pc));

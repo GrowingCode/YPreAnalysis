@@ -56,7 +56,7 @@ test_paddd(void* app_pc)
 {
 	void* drcontext = dr_get_current_drcontext();
 	
-	dr_mcontext_t mc;
+	dr_mcontext_t mc = { sizeof(mc), DR_MC_ALL };
 
 	dr_get_mcontext(drcontext, &mc);
 
@@ -76,13 +76,9 @@ test_paddd(void* app_pc)
 	auto opnd_0_sz = opnd_get_size(src0);
 	uint opnd_0_bt_sz = opnd_size_in_bytes(opnd_0_sz);
 	for (int i = 0; i < opnd_0_bt_sz; i++) {
-		dr_printf("reg_get_value_ex[%d]:%d,", i, barr[i]);
+		dr_printf("equal:%d,reg_vex/vmovdqu[%d]:%d,%d;", barr[i] == base_addr[i], i, barr[i], base_addr[i]);
 	}
 	dr_printf("\n");
-	//for (int i = 0; i < opnd_0_bt_sz; i++) {
-	//	dr_printf("vmovdqu[%d]:%d,", i, base_addr[i]);
-	//}
-	//dr_printf("\n");
 }
 
 dr_emit_flags_t
@@ -117,14 +113,21 @@ app_instruction_val(void* drcontext, void* tag, instrlist_t* bb, instr_t* instr,
 					opnd_t opnd_0 = instr_get_src(instr, 0);
 					opnd_size_t o0_sz = opnd_get_size(opnd_0);
 					// opnd_t dst_opnd = opnd_create_abs_addr(buf_ptr, o0_sz);
-					opnd_t dst_opnd = opnd_create_reg(DR_REG_XMM15);
-					instr_t* new_instr = INSTR_CREATE_vmovdqu(drcontext, dst_opnd, opnd_0);
-					// INSTR_CREATE_vmovdqu(drcontext, , s);
+					reg_id_t in_use_reg;
+					drreg_reserve_register(drcontext, bb, instr, NULL, &in_use_reg);
+					opnd_t abs_addr_imm = opnd_create_immed_int64((int64_t)buf_ptr, OPSZ_8);
+					instr_t* mov_to_base_reg = INSTR_CREATE_mov_imm(drcontext, opnd_create_reg(in_use_reg), abs_addr_imm);
+					instrlist_meta_preinsert(bb, instr, mov_to_base_reg);
+//					opnd_t dst_opnd = OPND_CREATE_MEMPTR(in_use_reg, 0);
+					opnd_t dst_opnd = opnd_create_base_disp(in_use_reg, DR_REG_NULL, 0, 0, o0_sz);
+					// opnd_t dst_opnd = opnd_create_reg(DR_REG_XMM15);
+					instr_t* vmovdqu_instr = INSTR_CREATE_vmovdqu(drcontext, dst_opnd, opnd_0);
+					instrlist_meta_preinsert(bb, instr, vmovdqu_instr);
 					// instr_t* new_instr = XINST_CREATE_store(drcontext, OPND_CREATE_MEMPTR(buf_ptr, 0), opnd);
-//					instrlist_meta_preinsert(bb, instr, new_instr);
+					drreg_unreserve_register(drcontext, bb, instr, in_use_reg);
 
 					byte new_instr_store[20]{0};
-					byte* new_instr_store_end = instr_encode(drcontext, new_instr, new_instr_store);
+					byte* new_instr_store_end = instr_encode(drcontext, vmovdqu_instr, new_instr_store);
 					int bidx = 0;
 					for (byte* nis_ptr = new_instr_store; nis_ptr < new_instr_store_end; nis_ptr++) {
 						dr_printf("inst_byte_%d:%x,", bidx, *nis_ptr);

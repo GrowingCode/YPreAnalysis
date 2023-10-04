@@ -11,6 +11,7 @@
 #include <drsyscall.h>
 #include <drx.h>
 #include <string.h>
+#include <dr_ir_macros.h>
 #ifdef WINDOWS
 # include <windows.h>
 #endif
@@ -46,6 +47,44 @@ app_instruction_analysis(void* drcontext, void* tag, instrlist_t* bb, bool for_t
 	return DR_EMIT_DEFAULT;
 }
 
+bool first_paddd = false;
+
+static drx_buf_t* temp_reg_value_store_buffer;
+
+static void
+test_paddd(void* app_pc)
+{
+	void* drcontext = dr_get_current_drcontext();
+	
+	dr_mcontext_t mc;
+
+	dr_get_mcontext(drcontext, &mc);
+
+	byte* instr_app_pc = (byte*) app_pc;
+
+	instr_t instr_decode_by_pc;
+	instr_init(drcontext, &instr_decode_by_pc);
+	decode(drcontext, instr_app_pc, &instr_decode_by_pc);
+
+	byte* base_addr = (byte*)drx_buf_get_buffer_base(drcontext, temp_reg_value_store_buffer);
+
+	opnd_t src0 = instr_get_src(&instr_decode_by_pc, 0);
+	byte barr[64]{0};
+	reg_get_value_ex(opnd_get_reg(src0), &mc, barr);
+
+	dr_printf("processing paddd is reg:%d, reg_id:%d\n", opnd_is_reg(src0), opnd_get_reg(src0));
+	auto opnd_0_sz = opnd_get_size(src0);
+	uint opnd_0_bt_sz = opnd_size_in_bytes(opnd_0_sz);
+	for (int i = 0; i < opnd_0_bt_sz; i++) {
+		dr_printf("reg_get_value_ex[%d]:%d,", i, barr[i]);
+	}
+	dr_printf("\n");
+	//for (int i = 0; i < opnd_0_bt_sz; i++) {
+	//	dr_printf("vmovdqu[%d]:%d,", i, base_addr[i]);
+	//}
+	//dr_printf("\n");
+}
+
 dr_emit_flags_t
 app_instruction_val(void* drcontext, void* tag, instrlist_t* bb, instr_t* instr,
 	bool for_trace, bool translating, void* user_data)
@@ -57,6 +96,36 @@ app_instruction_val(void* drcontext, void* tag, instrlist_t* bb, instr_t* instr,
 		bool instr_is_not_nop_instr = not instr_is_nop(instr);
 		if (instr_is_not_nop_instr) {
 			int instr_opcode = instr_get_opcode(instr);
+			if (instr_opcode == OP_paddd) {
+				if (not first_paddd) {
+					//{
+					//	bool k0_dead = false;
+					//	drreg_status_t k0_ds = drreg_is_register_dead(drcontext, DR_REG_K0, instr, &k0_dead);
+					//	dr_printf("at first paddd, k0_dead:%d\n", k0_dead);// true
+					//}
+					//{
+					//	bool k1_dead = false;
+					//	drreg_status_t k1_ds = drreg_is_register_dead(drcontext, DR_REG_K1, instr, &k1_dead);
+					//	dr_printf("at first paddd, k1_dead:%d\n", k1_dead);// true
+					//}
+					//{
+					//	bool k2_dead = false;
+					//	drreg_status_t k2_ds = drreg_is_register_dead(drcontext, DR_REG_K2, instr, &k2_dead);
+					//	dr_printf("at first paddd, k2_dead:%d\n", k2_dead);// true
+					//}
+					void* buf_ptr = drx_buf_get_buffer_base(drcontext, temp_reg_value_store_buffer);
+					opnd_t opnd_0 = instr_get_src(instr, 0);
+					opnd_size_t o0_sz = opnd_get_size(opnd_0);
+					instr_t* new_instr = INSTR_CREATE_vmovdqu(drcontext, opnd_create_abs_addr(buf_ptr, o0_sz), opnd_0);
+					// INSTR_CREATE_vmovdqu(drcontext, , s);
+					// instr_t* new_instr = XINST_CREATE_store(drcontext, OPND_CREATE_MEMPTR(buf_ptr, 0), opnd);
+					instrlist_meta_preinsert(bb, instr, new_instr);
+
+					app_pc instr_app_pc = instr_get_app_pc(instr);
+					dr_insert_clean_call(drcontext, bb, instr, test_paddd, true, 1, OPND_CREATE_INTPTR(instr_app_pc));
+				}
+				first_paddd = true;
+			}
 			per_thread_t* t_data = (per_thread_t*)drmgr_get_tls_field(drcontext, tls_index);
 			//				std::string instr_op_info = get_opcode_name(instr_opcode);
 			//				instr_op_info += "," + std::to_string(instr_opcode);
@@ -178,11 +247,15 @@ void dr_client_main(client_id_t id, int argc, const char* argv[])
 
 	dr_printf("=== begin pre analysis\n");
 
+//	opnd_size_t osz_sz = reg_get_size(DR_REG_K0);
+//	int osz_byte_sz = opnd_size_in_bytes(osz_sz);
+//	dr_printf("osz_byte_sz:%d\n", osz_byte_sz);
+
 	client_id = id;
 
 	std::string parse_err;
 	int last_index;
-	if (!droption_parser_t::parse_argv(DROPTION_SCOPE_CLIENT, argc, argv, &parse_err, &last_index)) {
+	if (!dynamorio::droption::droption_parser_t::parse_argv(dynamorio::droption::DROPTION_SCOPE_CLIENT, argc, argv, &parse_err, &last_index)) {
 		dr_abort();
 	}
 
@@ -216,6 +289,8 @@ void dr_client_main(client_id_t id, int argc, const char* argv[])
 	
 	if (!drmgr_register_bb_instrumentation_event(app_instruction_analysis, app_instruction_val, NULL)) DR_ASSERT_MSG(false, "drmgr_register_bb_instrumentation_event false");
 	tls_index = drmgr_register_tls_field();
+
+	temp_reg_value_store_buffer = drx_buf_create_circular_buffer(512 / 8 * 8 * 5);
 }
 
 

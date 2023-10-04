@@ -1,4 +1,6 @@
-C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-9.93.19503/bin64/drrun.exe -c C:/HomeSpace/CTaintAnalysis/yyx_pre_analysis/build/Release/yyx_pre_analysis.dll -- C:/Users/yangy/source/repos/TestReadFile/x64/Release/TestReadFile.exe C:/HomeSpace/BinaryFuzzInput/5bytes.bin
+C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-10.0.0/bin64/drrun.exe -c C:/HomeSpace/CTaintAnalysis/yyx_pre_analysis/build/Release/yyx_pre_analysis.dll -- C:/Users/yangy/source/repos/TestReadFile/x64/Release/TestReadFile.exe C:/HomeSpace/BinaryFuzzInput/5bytes.bin
+
+C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-10.0.0/bin64/drrun.exe -c C:/HomeSpace/CTaintAnalysis/yyx_pre_analysis/build/Release/yyx_pre_analysis.dll -- C:/HomeSpace/BinaryFuzzBench/winlibs/test_jpeg/build/Release/test_jpeg.exe C:/HomeSpace/BinaryFuzzBench/winlibs/test_jpeg/input.jpg
 
 
 

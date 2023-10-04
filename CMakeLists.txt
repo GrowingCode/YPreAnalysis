@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 
 # set(DynamoRIO_DIR "C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-9.0.1/cmake")
-set(DynamoRIO_DIR "C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-9.93.19503/cmake")
+set(DynamoRIO_DIR "C:/HomeSpace/BinaryAnalysis/DynamoRIO-Windows-10.0.0/cmake")
 # set(DrMemoryFramework_DIR "C:/HomeSpace/BinaryAnalysis/DrMemory-Windows-2.5.0/drmf")
 
 find_package(DynamoRIO REQUIRED)

@@ -65,7 +65,7 @@ test_paddd(void* app_pc)
 	instr_t instr_decode_by_pc;
 	instr_init(drcontext, &instr_decode_by_pc);
 	decode(drcontext, instr_app_pc, &instr_decode_by_pc);
-
+	
 	byte* base_addr = (byte*)drx_buf_get_buffer_base(drcontext, temp_reg_value_store_buffer);
 
 	opnd_t src0 = instr_get_src(&instr_decode_by_pc, 0);
@@ -102,6 +102,8 @@ struct reg_value_info {
 
 void y_insert_to_store_reg_value_into_specified_mem(void* drcontext, instrlist_t* bb, instr_t* instr, void* mem_addr)
 {
+	// vmovdqu for xmm & larger, MOVQ for mm, mov for r_pfx common registers, kmovq for k_pfx registers. 
+	
 	opnd_t opnd_0 = instr_get_src(instr, 0);
 	opnd_size_t o0_sz = opnd_get_size(opnd_0);
 	// opnd_t dst_opnd = opnd_create_abs_addr(buf_ptr, o0_sz);
@@ -372,6 +374,8 @@ void dr_client_main(client_id_t id, int argc, const char* argv[])
 	tls_index = drmgr_register_tls_field();
 
 	temp_reg_value_store_buffer = drx_buf_create_circular_buffer((512 / 8 + 8) * 10);
+
+	
 }
 
 

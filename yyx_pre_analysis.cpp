@@ -102,7 +102,7 @@ struct reg_value_info {
 
 void y_insert_to_store_reg_value_into_specified_mem(void* drcontext, instrlist_t* bb, instr_t* instr, void* mem_addr)
 {
-	// vmovdqu for xmm & larger, MOVQ for mm, mov for r_pfx common registers, kmovq for k_pfx registers. 
+	// vmovdqu for xmm & larger, MOVQ for mm, mov for r_pfx common registers, kmovq (ignore if not exist) for k_pfx registers. 
 	
 	opnd_t opnd_0 = instr_get_src(instr, 0);
 	opnd_size_t o0_sz = opnd_get_size(opnd_0);
